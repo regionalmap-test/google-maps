@@ -19,25 +19,24 @@
   <body>
     <div id="map"></div>
     <script>
-      function initMap() {
-        const map = new google.maps.Map(document.getElementById("map"), {
-          center: { lat: 35.681236, lng: 139.767125 },
-          zoom: 11,
-          mapTypeControl: false,
-          fullscreenControl: false,
-          streetViewControl: false
-        });
+		function initMap() {
+			const map = new google.maps.Map(document.getElementById("map"), {
+			zoom: 11,
+			mapTypeControl: false,
+			fullscreenControl: false,
+ 			streetViewControl: false
+		});
 
         // ▼▼ ここを書き換えてください ▼▼
         // GitHub Pages 等に KML をアップロードして、その生URLを下に貼る
         const kmlUrl = "https://regionalmap-test.github.io/google-maps/KML_GitHub/fullmap_KML.kml";
 
         new google.maps.KmlLayer({
-          url: kmlUrl,
-          map: map,
-          suppressInfoWindows: false,
-          preserveViewport: false
-        });
+    		url: kmlUrl,
+    		map: map,
+    		suppressInfoWindows: false,
+    		preserveViewport: false   // ← これが KML に合わせてズームしてくれる
+ 		});
       }
 
       window.onload = initMap;
