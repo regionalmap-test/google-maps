@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>テスト用区域全体</name>
+    <description/>
+    <NetworkLink>
+      <name>テスト用区域全体</name>
+      <Link>
+        <href><![CDATA[https://www.google.com/maps/d/kml?forcekml=1&mid=1ZovX2S-G5A4QTbZRHNgS-M6o3Ba7sVQ]]></href>
+      </Link>
+    </NetworkLink>
+  </Document>
+</kml>
