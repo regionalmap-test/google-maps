@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Small Area Map</title>
+  <style>
+    #map { height: 100vh; width: 100vw; }
+    #passwordDiv {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.95); display: flex;
+      align-items: center; justify-content: center; flex-direction: column;
+      z-index: 1000;
+    }
+    #passwordInput { padding: 0.5em; font-size: 1em; }
+    #submitBtn { padding: 0.5em 1em; font-size: 1em; margin-top: 0.5em; }
+  </style>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBlkqCeYEheeLNZ-jEODKfVfznTbo-8jZE"></script>
+</head>
+<body>
+  <div id="passwordDiv">
+    <h2>パスワードを入力してください</h2>
+    <input type="password" id="passwordInput" placeholder="パスワード">
+    <button id="submitBtn">表示</button>
+    <p id="msg" style="color:red;"></p>
+  </div>
+  <div id="map"></div>
+
+  <script>
+    const correctPassword = "1914";
+    const submitBtn = document.getElementById("submitBtn");
+    const passwordInput = document.getElementById("passwordInput");
+    const passwordDiv = document.getElementById("passwordDiv");
+    const msg = document.getElementById("msg");
+
+    // 赤い家のアイコン URL
+    const houseIcon = "https://upload.wikimedia.org/wikipedia/commons/6/6b/Red_house_icon.png"; 
+    // 小エリア内の家の座標例（lat, lng の配列）
+    const houseMarkers = [
+      {lat: 35.6895, lng: 139.6917},
+      {lat: 35.6900, lng: 139.6920}
+    ];
+
+    submitBtn.onclick = function() {
+      if (passwordInput.value === correctPassword) {
+        passwordDiv.style.display = "none";
+        initMap();
+      } else {
+        msg.textContent = "パスワードが違います。";
+      }
+    };
+
+    function initMap() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const mid = urlParams.get("mid");
+
+      const map = new google.maps.Map(document.getElementById("map"), {
+        center: {lat: 35.68, lng: 139.76}, // 初期中心はダミー
+        zoom: 15
+      });
+
+      // KMLレイヤー（ポリゴン）表示
+      const kmlUrl = `https://www.google.com/maps/d/kml?mid=${mid}&forcekml=1&_=${new Date().getTime()}`;
+      const kmlLayer = new google.maps.KmlLayer({
+        url: kmlUrl,
+        map: map,
+        preserveViewport: true
+      });
+
+      kmlLayer.addListener('defaultviewport_changed', function() {
+        map.fitBounds(kmlLayer.getDefaultViewport());
+      });
+
+      // 赤い家アイコンのピンを表示
+      houseMarkers.forEach(h => {
+        new google.maps.Marker({
+          position: {lat: h.lat, lng: h.lng},
+          map: map,
+          icon: houseIcon
+        });
+      });
+    }
+  </script>
+</body>
+</html>
