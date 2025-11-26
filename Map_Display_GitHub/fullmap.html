@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Full Map Viewer - Colored Polygons & Labels</title>
+  <style>
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+  </style>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBlkqCeYEheeLNZ-jEODKfVfznTbo-8jZE"></script>
+  <script>
+    function initMap() {
+      const map = new google.maps.Map(document.getElementById("map"), {
+        center: {lat: 0, lng: 0},
+        zoom: 2
+      });
+
+      const kmlUrl = 'https://www.google.com/maps/d/kml?mid=1ZovX2S-G5A4QTbZRHNgS-M6o3Ba7sVQ&forcekml=1&_=' + new Date().getTime();
+
+      fetch(kmlUrl)
+        .then(response => response.text())
+        .then(kmlText => {
+          const parser = new DOMParser();
+          const kmlDoc = parser.parseFromString(kmlText, "text/xml");
+          const bounds = new google.maps.LatLngBounds();
+
+          const placemarks = kmlDoc.getElementsByTagName("Placemark");
+          let firstPolygonDrawn = false; // 全体ポリゴン判定用
+
+          for (let i = 0; i < placemarks.length; i++) {
+            const placemark = placemarks[i];
+
+            // 名前取得
+            const nameEl = placemark.getElementsByTagName("name")[0];
+            const name = nameEl ? nameEl.textContent : "";
+
+            // ポイント座標（ピン非表示・ラベルのみ表示）
+            const pointEl = placemark.getElementsByTagName("Point")[0];
+            if (pointEl) {
+              const coordText = pointEl.getElementsByTagName("coordinates")[0].textContent.trim();
+              const [lng, lat] = coordText.split(',').map(Number);
+              if (!isNaN(lat) && !isNaN(lng)) {
+                new google.maps.Marker({
+                  position: {lat: lat, lng: lng},
+                  map: map,
+                  label: {
+                    text: name,
+                    color: "blue",
+                    fontSize: "14px",
+                    fontWeight: "bold"
+                  },
+                  icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 0,       // ピン非表示
+                    fillOpacity: 0
+                  }
+                });
+                bounds.extend(new google.maps.LatLng(lat, lng));
+              }
+            }
+
+            // Polygon座標
+            const polygonEl = placemark.getElementsByTagName("Polygon")[0];
+            if (polygonEl) {
+              const coordsText = polygonEl.getElementsByTagName("coordinates")[0].textContent.trim();
+              const path = coordsText.split(/\s+/).map(pair => {
+                const [lng, lat] = pair.split(',').map(Number);
+                return {lat: lat, lng: lng};
+              });
+
+              // 全体ポリゴンは最初の1つだけ茶色、それ以外は緑
+              let strokeColor = firstPolygonDrawn ? "#008000" : "#8B4513";
+              if (!firstPolygonDrawn) firstPolygonDrawn = true;
+
+              new google.maps.Polygon({
+                paths: path,
+                map: map,
+                strokeColor: strokeColor,
+                strokeOpacity: 1.0,
+                strokeWeight: 2,
+                fillOpacity: 0
+              });
+
+              path.forEach(p => bounds.extend(new google.maps.LatLng(p.lat, p.lng)));
+            }
+          }
+
+          // 地図を KML 範囲にフィット
+          map.fitBounds(bounds);
+        })
+        .catch(err => console.error("KML 読み込みエラー:", err));
+    }
+  </script>
+</head>
+<body onload="initMap()">
+  <div id="map"></div>
+</body>
+</html>

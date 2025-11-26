@@ -1,0 +1,83 @@
+// --- My Maps KML の読み込み ---
+var mymapsUrl = "https://www.google.com/maps/d/kml?mid=" + mid + "&forcekml=1";
+
+// ---- 初期マップ（位置は後でフィットさせるので適当でOK） ---
+var map = new google.maps.Map(document.getElementById("map"), {
+  zoom: 14,
+  center: { lat: 35.0, lng: 135.0 }, 
+  mapTypeId: "roadmap"
+});
+
+// --- KML を読み込み ---
+fetch(mymapsUrl)
+  .then(res => res.text())
+  .then(kmlText => {
+    var parser = new DOMParser();
+    var kml = parser.parseFromString(kmlText, "text/xml");
+
+    // --- My Maps からポリゴンを抽出 ---
+    var coords = kml.getElementsByTagName("coordinates");
+    var bounds = new google.maps.LatLngBounds();
+
+    for (var i = 0; i < coords.length; i++) {
+      var coordText = coords[i].textContent.trim();
+      var coordPairs = coordText.split(/\s+/);
+
+      var path = [];
+
+      coordPairs.forEach(pair => {
+        var lngLat = pair.split(",");
+        if (lngLat.length >= 2) {
+          var lng = parseFloat(lngLat[0]);
+          var lat = parseFloat(lngLat[1]);
+          path.push({ lat: lat, lng: lng });
+          bounds.extend({ lat: lat, lng: lng });
+        }
+      });
+
+      // --- ポリゴンの枠線だけ表示（塗りつぶしなし） ---
+      new google.maps.Polygon({
+        map: map,
+        paths: path,
+        strokeColor: "#00FF00",   // 緑色
+        strokeWeight: 3,
+        fillOpacity: 0             // 塗りつぶしなし
+      });
+    }
+
+    // --- 全体が入るようにフィット ---
+    map.fitBounds(bounds);
+
+    // ---- マーカーの処理（前回の青/赤分類ロジック） ----
+    var placemarks = kml.getElementsByTagName("Placemark");
+
+    for (var i = 0; i < placemarks.length; i++) {
+      var pm = placemarks[i];
+      var nameNode = pm.getElementsByTagName("name")[0];
+      var coordsNode = pm.getElementsByTagName("coordinates")[0];
+
+      if (!coordsNode) continue;
+
+      var coord = coordsNode.textContent.trim().split(",");
+      var lng = parseFloat(coord[0]);
+      var lat = parseFloat(coord[1]);
+      var title = nameNode ? nameNode.textContent.trim() : "";
+
+      // 分類（会社かどうか）
+      var isCompany = title.includes("[会社]");
+
+      new google.maps.Marker({
+        position: { lat: lat, lng: lng },
+        map: map,
+        icon: {
+          path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+          scale: 6,
+          fillColor: isCompany ? "#0000FF" : "#FF0000",  // 青 or 赤
+          fillOpacity: 1,
+          strokeWeight: 1,
+          strokeColor: "#000000"
+        },
+        title: title
+      });
+    }
+  });
