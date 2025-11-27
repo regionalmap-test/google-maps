@@ -10,13 +10,30 @@
       background: rgba(255,255,255,0.95); display: flex;
       align-items: center; justify-content: center; flex-direction: column;
       z-index: 1000;
-      /* 以下の2行を追加することで、中央に配置されたエリアの幅が広がります */
-  	  width: 80%;       /* 画面幅の80% */
-	  /* max-width: 400px; 最大幅は400px */
-	  margin: 0 auto;
     }
+    /* 小さいので置き換える */
+    /*
     #passwordInput { padding: 0.5em; font-size: 1em; }
     #submitBtn { padding: 0.5em 1em; font-size: 1em; margin-top: 0.5em; }
+    */
+    
+    #passwordDiv h2 {
+      width: 400px; /* タイトルも同じ幅に */
+      text-align: center;
+    }
+    #passwordInput {
+    /* 入力欄のサイズ調整 */
+      padding: 0.75em; 
+      font-size: 2em; 
+      width: 400px; /* ここで幅を広げる！ */
+    }
+    #submitBtn { 
+    /* ボタンのサイズ調整 */
+      padding: 0.75em 1.5em; 
+      font-size: 1.5em; 
+      margin-top: 1em; 
+      width: 400px; /* ボタンも同じ幅に！ */
+  }
   </style>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBlkqCeYEheeLNZ-jEODKfVfznTbo-8jZE"></script>
 </head>
