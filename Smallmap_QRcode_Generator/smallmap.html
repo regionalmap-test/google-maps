@@ -6,13 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-    /* MAP */
     #map { 
       height: 100vh; 
       width: 100vw; 
     }
 
-    /* パスワード画面の全体 */
     #passwordDiv {
       position: absolute; 
       top: 0; left: 0; right: 0; bottom: 0;
@@ -25,7 +23,6 @@
       padding: 20px;
     }
 
-    /* 入力フォーム全体（スマホで幅いっぱいに） */
     #passwordInput {
       width: 90%;
       max-width: 400px;
@@ -36,7 +33,6 @@
       box-sizing: border-box;
     }
 
-    /* ボタンも大きくタップしやすく */
     #submitBtn {
       width: 90%;
       max-width: 400px;
@@ -50,7 +46,6 @@
       box-sizing: border-box;
     }
 
-    /* 見出しも少し大きめ */
     #passwordDiv h2 {
       font-size: 1.5em;
       margin-bottom: 1em;
@@ -62,15 +57,9 @@
       font-size: 1.1em; 
     }
 
-    /* 小さいスマホ向け微調整 */
     @media (max-width: 480px) {
-      #passwordDiv h2 {
-        font-size: 1.3em;
-      }
-      #passwordInput, #submitBtn {
-        font-size: 1.1em;
-        padding: 0.9em;
-      }
+      #passwordDiv h2 { font-size: 1.3em; }
+      #passwordInput, #submitBtn { font-size: 1.1em; padding: 0.9em; }
     }
   </style>
 
@@ -94,12 +83,6 @@
     const passwordDiv = document.getElementById("passwordDiv");
     const msg = document.getElementById("msg");
 
-    const houseIcon = "https://upload.wikimedia.org/wikipedia/commons/6/6b/Red_house_icon.png"; 
-    const houseMarkers = [
-      {lat: 35.6895, lng: 139.6917},
-      {lat: 35.6900, lng: 139.6920}
-    ];
-
     submitBtn.onclick = function() {
       if (passwordInput.value === correctPassword) {
         passwordDiv.style.display = "none";
@@ -110,30 +93,32 @@
     };
 
     function initMap() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const mid = urlParams.get("mid");
-
       const map = new google.maps.Map(document.getElementById("map"), {
         center: {lat: 35.68, lng: 139.76},
         zoom: 15
       });
 
-      const kmlUrl = `https://www.google.com/maps/d/kml?mid=${mid}&forcekml=1&_=${new Date().getTime()}`;
-      const kmlLayer = new google.maps.KmlLayer({
-        url: kmlUrl,
-        map: map,
-        preserveViewport: true
-      });
+      // ✅ マーカー用データ（単品 HTML 内にすべて記述）
+      const markerData = [
+        {lat: 35.6895, lng: 139.6917, name: "訪問しないお宅"},
+        {lat: 35.6900, lng: 139.6920, name: "ビジネス"},
+        {lat: 35.6890, lng: 139.6930, name: "その他"}
+      ];
 
-      kmlLayer.addListener('defaultviewport_changed', function() {
-        map.fitBounds(kmlLayer.getDefaultViewport());
-      });
+      // 自動でピンを作成（色分け）
+      markerData.forEach(m => {
+        let iconUrl = null;
+        if (m.name === "訪問しないお宅") {
+          iconUrl = "http://maps.google.com/mapfiles/kml/pushpin/red-pushpin.png";
+        } else if (m.name === "ビジネス") {
+          iconUrl = "http://maps.google.com/mapfiles/kml/pushpin/blue-pushpin.png";
+        }
 
-      houseMarkers.forEach(h => {
         new google.maps.Marker({
-          position: {lat: h.lat, lng: h.lng},
+          position: {lat: m.lat, lng: m.lng},
           map: map,
-          icon: houseIcon
+          icon: iconUrl,  // nullならデフォルトピン
+          title: m.name
         });
       });
     }
