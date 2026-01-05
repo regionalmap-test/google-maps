@@ -1,143 +1,120 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <title>Small Area Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<title>Small Area Map</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    /* MAP */
-    #map { 
-      height: 100vh; 
-      width: 100vw; 
-    }
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    /* パスワード画面の全体 */
-    #passwordDiv {
-      position: absolute; 
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(255,255,255,0.95); 
-      display: flex;
-      align-items: center; 
-      justify-content: center; 
-      flex-direction: column;
-      z-index: 1000;
-      padding: 20px;
-    }
-
-    /* 入力フォーム全体（スマホで幅いっぱいに） */
-    #passwordInput {
-      width: 90%;
-      max-width: 400px;
-      padding: 1em;
-      font-size: 1.2em;
-      border-radius: 8px;
-      border: 1px solid #aaa;
-      box-sizing: border-box;
-    }
-
-    /* ボタンも大きくタップしやすく */
-    #submitBtn {
-      width: 90%;
-      max-width: 400px;
-      padding: 1em;
-      font-size: 1.2em;
-      margin-top: 0.8em;
-      border-radius: 8px;
-      border: none;
-      background: #4285F4;
-      color: white;
-      box-sizing: border-box;
-    }
-
-    /* 見出しも少し大きめ */
-    #passwordDiv h2 {
-      font-size: 1.5em;
-      margin-bottom: 1em;
-    }
-
-    #msg { 
-      margin-top: 0.6em; 
-      color: red; 
-      font-size: 1.1em; 
-    }
-
-    /* 小さいスマホ向け微調整 */
-    @media (max-width: 480px) {
-      #passwordDiv h2 {
-        font-size: 1.3em;
-      }
-      #passwordInput, #submitBtn {
-        font-size: 1.1em;
-        padding: 0.9em;
-      }
-    }
-  </style>
-
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBlkqCeYEheeLNZ-jEODKfVfznTbo-8jZE"></script>
+<style>
+html, body { margin:0; height:100%; }
+#map { width:100%; height:100%; }
+#passwordDiv {
+  position:fixed; inset:0;
+  background:rgba(255,255,255,.95);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+}
+#passwordInput, #submitBtn {
+  width:90%; max-width:400px;
+  padding:1em; font-size:1.2em;
+}
+</style>
 </head>
 <body>
 
-  <div id="passwordDiv">
-    <h2>パスワードを入力してください</h2>
-    <input type="password" id="passwordInput" placeholder="パスワード">
-    <button id="submitBtn">表示</button>
-    <p id="msg"></p>
-  </div>
+<div id="passwordDiv">
+  <h2>パスワードを入力してください</h2>
+  <input type="password" id="passwordInput">
+  <button id="submitBtn">表示</button>
+  <p id="msg"></p>
+</div>
 
-  <div id="map"></div>
+<div id="map"></div>
 
-  <script>
-    const correctPassword = "1914";
-    const submitBtn = document.getElementById("submitBtn");
-    const passwordInput = document.getElementById("passwordInput");
-    const passwordDiv = document.getElementById("passwordDiv");
-    const msg = document.getElementById("msg");
+<script>
+const correctPassword = "1914";
 
-    const houseIcon = "https://upload.wikimedia.org/wikipedia/commons/6/6b/Red_house_icon.png"; 
-    const houseMarkers = [
-      {lat: 35.6895, lng: 139.6917},
-      {lat: 35.6900, lng: 139.6920}
-    ];
+/* ★ 自分の Apps Script Web App URL */
+const PROXY_URL =
+  "https://script.google.com/macros/s/AKfycbwBxigkYuIO4Nzg6hh_HDpM1FQyjoQCGy2RZuHPHeX80BMEXfxbNJkQlz9-LPBxh_sS/exec";
 
-    submitBtn.onclick = function() {
-      if (passwordInput.value === correctPassword) {
-        passwordDiv.style.display = "none";
-        initMap();
-      } else {
-        msg.textContent = "パスワードが違います。";
+submitBtn.onclick = () => {
+  if (passwordInput.value === correctPassword) {
+    passwordDiv.style.display = "none";
+    initMap();
+  } else {
+    msg.textContent = "パスワードが違います";
+  }
+};
+
+async function initMap() {
+  const mid = new URLSearchParams(location.search).get("mid");
+  if (!mid) return;
+
+  const map = L.map("map");
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19
+  }).addTo(map);
+
+  const res = await fetch(PROXY_URL + "?mid=" + mid);
+  const text = await res.text();
+
+  const xml = new DOMParser().parseFromString(text, "text/xml");
+  const bounds = [];
+
+  xml.querySelectorAll("Folder").forEach(folder => {
+    const name =
+      folder.querySelector("name")?.textContent.trim();
+
+    let color = "gray";
+    if (name === "ビジネス") color = "blue";
+    if (name === "訪問しないお宅") color = "red";
+
+    folder.querySelectorAll("Placemark").forEach(pm => {
+      const point = pm.querySelector("Point coordinates");
+      if (point) {
+        const [lng, lat] =
+          point.textContent.trim().split(",").map(Number);
+
+        bounds.push([lat, lng]);
+
+        L.circleMarker([lat, lng], {
+          radius: 7,
+          color,
+          fillColor: color,
+          fillOpacity: 1
+        }).addTo(map);
       }
-    };
 
-    function initMap() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const mid = urlParams.get("mid");
-
-      const map = new google.maps.Map(document.getElementById("map"), {
-        center: {lat: 35.68, lng: 139.76},
-        zoom: 15
-      });
-
-      const kmlUrl = `https://www.google.com/maps/d/kml?mid=${mid}&forcekml=1&_=${new Date().getTime()}`;
-      const kmlLayer = new google.maps.KmlLayer({
-        url: kmlUrl,
-        map: map,
-        preserveViewport: true
-      });
-
-      kmlLayer.addListener('defaultviewport_changed', function() {
-        map.fitBounds(kmlLayer.getDefaultViewport());
-      });
-
-      houseMarkers.forEach(h => {
-        new google.maps.Marker({
-          position: {lat: h.lat, lng: h.lng},
-          map: map,
-          icon: houseIcon
+      const poly = pm.querySelector("Polygon coordinates");
+      if (poly) {
+        const latlngs = poly.textContent.trim().split(/\s+/).map(c => {
+          const [lng, lat] = c.split(",").map(Number);
+          bounds.push([lat, lng]);
+          return [lat, lng];
         });
-      });
-    }
-  </script>
+
+        L.polygon(latlngs, {
+          color: "#555",
+          weight: 2,
+          fillOpacity: 0.1
+        }).addTo(map);
+      }
+    });
+  });
+
+  if (bounds.length) map.fitBounds(bounds);
+}
+</script>
 
 </body>
 </html>
